@@ -25,4 +25,147 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Products table for sneaker inventory
+ */
+export const products = mysqlTable("products", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  brand: varchar("brand", { length: 100 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  basePrice: int("basePrice").notNull(), // Price in centavos (PHP)
+  salePrice: int("salePrice"), // Sale price in centavos, null if not on sale
+  images: text("images").notNull(), // JSON array of image URLs
+  sizes: text("sizes").notNull(), // JSON array of available sizes
+  stock: int("stock").default(0).notNull(),
+  featured: int("featured").default(0).notNull(), // 0 = false, 1 = true
+  clearance: int("clearance").default(0).notNull(), // 0 = false, 1 = true
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;
+
+/**
+ * Cart items for shopping cart functionality
+ */
+export const cartItems = mysqlTable("cartItems", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productId: int("productId").notNull(),
+  size: varchar("size", { length: 20 }).notNull(),
+  quantity: int("quantity").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CartItem = typeof cartItems.$inferSelect;
+export type InsertCartItem = typeof cartItems.$inferInsert;
+
+/**
+ * Orders table for purchase history
+ */
+export const orders = mysqlTable("orders", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  totalAmount: int("totalAmount").notNull(), // Total in centavos
+  status: mysqlEnum("status", ["pending", "paid", "processing", "shipped", "delivered", "cancelled"]).default("pending").notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  paymentId: varchar("paymentId", { length: 255 }), // PayMongo payment ID
+  shippingAddress: text("shippingAddress"),
+  contactNumber: varchar("contactNumber", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
+
+/**
+ * Order items for order details
+ */
+export const orderItems = mysqlTable("orderItems", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  productId: int("productId").notNull(),
+  productName: varchar("productName", { length: 255 }).notNull(),
+  size: varchar("size", { length: 20 }).notNull(),
+  quantity: int("quantity").notNull(),
+  price: int("price").notNull(), // Price at time of purchase in centavos
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = typeof orderItems.$inferInsert;
+
+/**
+ * Raffles table for limited release sneaker raffles
+ */
+export const raffles = mysqlTable("raffles", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  winnerCount: int("winnerCount").default(1).notNull(),
+  status: mysqlEnum("status", ["upcoming", "active", "ended", "winners_selected"]).default("upcoming").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Raffle = typeof raffles.$inferSelect;
+export type InsertRaffle = typeof raffles.$inferInsert;
+
+/**
+ * Raffle entries for user participation
+ */
+export const raffleEntries = mysqlTable("raffleEntries", {
+  id: int("id").autoincrement().primaryKey(),
+  raffleId: int("raffleId").notNull(),
+  userId: int("userId").notNull(),
+  isWinner: int("isWinner").default(0).notNull(), // 0 = false, 1 = true
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RaffleEntry = typeof raffleEntries.$inferSelect;
+export type InsertRaffleEntry = typeof raffleEntries.$inferInsert;
+
+/**
+ * Sale events for promotional campaigns
+ */
+export const saleEvents = mysqlTable("saleEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  discountPercentage: int("discountPercentage"),
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  status: mysqlEnum("status", ["upcoming", "active", "ended"]).default("upcoming").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SaleEvent = typeof saleEvents.$inferSelect;
+export type InsertSaleEvent = typeof saleEvents.$inferInsert;
+
+/**
+ * Customer inquiries for product questions
+ */
+export const inquiries = mysqlTable("inquiries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  productId: int("productId"),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["pending", "replied", "closed"]).default("pending").notNull(),
+  adminReply: text("adminReply"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Inquiry = typeof inquiries.$inferSelect;
+export type InsertInquiry = typeof inquiries.$inferInsert;

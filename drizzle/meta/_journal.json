@@ -1,5 +1,34 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1763142144546,
+      "tag": "0000_cold_vertigo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1763142211334,
+      "tag": "0001_lively_king_cobra",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1763142366111,
+      "tag": "0002_brief_greymalkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1763142650539,
+      "tag": "0003_white_dreaming_celestial",
+      "breakpoints": true
+    }
+  ]
 }

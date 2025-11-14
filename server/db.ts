@@ -89,4 +89,169 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Product queries
+export async function getAllProducts() {
+  const db = await getDb();
+  if (!db) return [];
+  const { products } = await import("../drizzle/schema");
+  return await db.select().from(products);
+}
+
+export async function getProductById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const { products } = await import("../drizzle/schema");
+  const result = await db.select().from(products).where(eq(products.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getFeaturedProducts() {
+  const db = await getDb();
+  if (!db) return [];
+  const { products } = await import("../drizzle/schema");
+  return await db.select().from(products).where(eq(products.featured, 1));
+}
+
+export async function getProductsByCategory(category: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const { products } = await import("../drizzle/schema");
+  return await db.select().from(products).where(eq(products.category, category));
+}
+
+export async function getProductsByBrand(brand: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const { products } = await import("../drizzle/schema");
+  return await db.select().from(products).where(eq(products.brand, brand));
+}
+
+// Cart queries
+export async function getCartItems(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { cartItems, products } = await import("../drizzle/schema");
+  return await db
+    .select({
+      id: cartItems.id,
+      productId: cartItems.productId,
+      size: cartItems.size,
+      quantity: cartItems.quantity,
+      product: products,
+    })
+    .from(cartItems)
+    .leftJoin(products, eq(cartItems.productId, products.id))
+    .where(eq(cartItems.userId, userId));
+}
+
+export async function addToCart(userId: number, productId: number, size: string, quantity: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { cartItems } = await import("../drizzle/schema");
+  const { and } = await import("drizzle-orm");
+  
+  // Check if item already exists in cart
+  const existing = await db
+    .select()
+    .from(cartItems)
+    .where(and(
+      eq(cartItems.userId, userId),
+      eq(cartItems.productId, productId),
+      eq(cartItems.size, size)
+    ))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    // Update quantity
+    await db
+      .update(cartItems)
+      .set({ quantity: existing[0].quantity + quantity })
+      .where(eq(cartItems.id, existing[0].id));
+    return existing[0].id;
+  } else {
+    // Insert new item
+    const result = await db.insert(cartItems).values({ userId, productId, size, quantity });
+    return result[0].insertId;
+  }
+}
+
+export async function updateCartItemQuantity(cartItemId: number, quantity: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { cartItems } = await import("../drizzle/schema");
+  await db.update(cartItems).set({ quantity }).where(eq(cartItems.id, cartItemId));
+}
+
+export async function removeFromCart(cartItemId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { cartItems } = await import("../drizzle/schema");
+  await db.delete(cartItems).where(eq(cartItems.id, cartItemId));
+}
+
+export async function clearCart(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { cartItems } = await import("../drizzle/schema");
+  await db.delete(cartItems).where(eq(cartItems.userId, userId));
+}
+
+// Order queries
+export async function createOrder(userId: number, totalAmount: number, shippingAddress: string, contactNumber: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { orders } = await import("../drizzle/schema");
+  const result = await db.insert(orders).values({
+    userId,
+    totalAmount,
+    shippingAddress,
+    contactNumber,
+    status: "pending",
+  });
+  return result[0].insertId;
+}
+
+export async function addOrderItem(orderId: number, productId: number, productName: string, size: string, quantity: number, price: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { orderItems } = await import("../drizzle/schema");
+  await db.insert(orderItems).values({
+    orderId,
+    productId,
+    productName,
+    size,
+    quantity,
+    price,
+  });
+}
+
+export async function getOrdersByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { orders } = await import("../drizzle/schema");
+  return await db.select().from(orders).where(eq(orders.userId, userId));
+}
+
+export async function getOrderById(orderId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const { orders } = await import("../drizzle/schema");
+  const result = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getOrderItems(orderId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { orderItems } = await import("../drizzle/schema");
+  return await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+}
+
+export async function updateOrderStatus(orderId: number, status: string, paymentId?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { orders } = await import("../drizzle/schema");
+  const updateData: any = { status };
+  if (paymentId) updateData.paymentId = paymentId;
+  await db.update(orders).set(updateData).where(eq(orders.id, orderId));
+}
